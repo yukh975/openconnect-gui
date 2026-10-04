@@ -40,6 +40,7 @@ extern "C" {
 #include <QtSingleApplication>
 
 #ifdef __MACH__
+#include "macos/MacHelper.h"
 #include <Security/Security.h>
 #include <mach-o/dyld.h>
 #endif
@@ -187,7 +188,9 @@ int main(int argc, char* argv[])
     }
 
 #if defined(Q_OS_MACOS) && defined(PROJ_ADMIN_PRIV_ELEVATION)
-    if (geteuid() != 0) {
+    /* With the privileged helper the application runs as the user;
+     * without it, as before, the whole application runs as root. */
+    if (geteuid() != 0 && !MacHelper::ensure()) {
         if (relaunch_as_root()) {
             /* We have re-launched with root privs. Exit this process. */
             return 0;

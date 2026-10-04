@@ -34,6 +34,11 @@
 #include <cstdarg>
 #include <cstdio>
 
+#ifdef Q_OS_MACOS
+#include "macos/MacHelper.h"
+#include <unistd.h>
+#endif
+
 static const char* OCG_PROTO_GLOBALPROTECT = "gp";
 static const char* OCG_PROTO_FORTINET = "fortinet";
 
@@ -387,6 +392,23 @@ static QByteArray native_path(const QString& path) {
 static void setup_tun_vfn(void* privdata)
 {
     VpnInfo* vpn = static_cast<VpnInfo*>(privdata);
+
+#ifdef Q_OS_MACOS
+    if (geteuid() != 0) {
+        // Running as the user: the privileged helper creates the utun
+        // interface and runs its own copy of vpnc-script.
+        if (!vpn->ss->get_vpnc_script_filename().isEmpty()) {
+            Logger::instance().addMessage(QObject::tr("The custom vpnc-script is not used with the privileged helper"));
+        }
+        const QByteArray command = MacHelper::tunScriptCommand(vpn->ss->get_interface_name());
+        if (openconnect_setup_tun_script(vpn->vpninfo, command.constData()) != 0) {
+            vpn->last_err = QObject::tr("Error setting up the TUN device");
+            return;
+        }
+        MacHelper::enlargeTunSocketBuffers();
+        return;
+    }
+#endif
 
     QByteArray vpncScriptFullPath;
     QByteArray interface_name;

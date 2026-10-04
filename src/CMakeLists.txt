@@ -74,10 +74,33 @@ if(APPLE)
     )
 endif()
 
+if(APPLE)
+    list(APPEND ${PROJECT_NAME}_SRCS
+        macos/MacHelper.cpp
+        macos/MacHelper.h
+        macos/ocg-helper-protocol.h
+    )
+endif()
+
 add_executable(${PROJECT_NAME}
     ${${PROJECT_NAME}_SRCS}
     ${${PROJECT_NAME}_RESOURCES}
 )
+
+if(APPLE)
+    # The privileged helper and the tun script talking to it, see
+    # macos/ocg-helper-protocol.h. Both go next to the main executable.
+    enable_language(C)
+    add_executable(ocg-helper macos/ocg-helper.c)
+    target_link_libraries(ocg-helper "-framework CoreFoundation" "-framework SystemConfiguration")
+    add_executable(ocg-tun-client macos/ocg-tun-client.c)
+    add_dependencies(${PROJECT_NAME} ocg-helper ocg-tun-client)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:ocg-helper> $<TARGET_FILE:ocg-tun-client> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMENT "Deploying the privileged helper..."
+        VERBATIM
+    )
+endif()
 
 if(MINGW)
     add_definitions(-DSPDLOG_WCHAR_FILENAMES)
