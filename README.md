@@ -5,6 +5,47 @@ See the [OpenConnect VPN GUI web site](https://gui.openconnect-vpn.net/)
 for detailed description, screen shots and other related projects.
 
 
+## macOS (Apple Silicon) build of this fork
+
+This fork adds a native arm64 build for macOS: no Rosetta, and no
+administrator password at every start. A small privileged helper creates
+the VPN interface and runs vpnc-script; the application itself runs as
+the user. Upstream: https://gitlab.com/openconnect/openconnect-gui
+
+**Download:** [latest release](https://github.com/yukh975/openconnect-gui/releases/latest),
+file `OpenConnect-GUI-<version>-macos-arm64.zip`. Requires macOS 27 on
+Apple Silicon.
+
+**Install:**
+
+1. Unpack the archive and move `OpenConnect-GUI.app` to `/Applications`.
+2. The build is not signed with an Apple Developer certificate, so macOS
+   may refuse to open it after a download from the browser. Then run once:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/OpenConnect-GUI.app
+   ```
+
+3. On the first start choose **Install** to set up the helper: this asks
+   for the administrator password once. Profiles of OpenConnect-GUI 1.5.x
+   are imported.
+
+**Remove the helper:**
+
+```bash
+sudo /Library/PrivilegedHelperTools/net.openconnect-vpn.gui.helper --uninstall
+```
+
+**Build from source:**
+
+```bash
+brew install cmake pkgconf qtbase qtscxml spdlog openconnect
+contrib/build_macos.sh
+```
+
+The self-contained application is put into `build/dist/OpenConnect-GUI.app`.
+
+
 ## Goals of this client
 
 The goal is to have a simple / minimalistic interface to access
