@@ -358,6 +358,7 @@ static void term_thread(MainWindow* m, SOCKET* fd)
 {
     char cmd = OC_CMD_CANCEL;
 
+    m->cancelRequested = true;
     if (*fd != INVALID_SOCKET) {
         m->vpn_status_changed(STATUS_DISCONNECTING);
         int ret = pipe_write(*fd, &cmd, 1);
@@ -689,7 +690,9 @@ static void main_loop(VpnInfo* vpninfo, MainWindow* m)
         retry = false;
         ret = vpninfo->connect();
         if (ret != 0) {
-            if (retries-- <= 0)
+            /* Cancelled by the user: a retry would only start another
+             * login, e.g. another second factor request. */
+            if (m->cancelRequested || retries-- <= 0)
                 goto fail;
 
             QString oldpass, oldgroup;
@@ -874,6 +877,7 @@ void MainWindow::on_connectClicked()
         }
     }
 
+    this->cancelRequested = false;
     future = QtConcurrent::run(main_loop, vpninfo, this);
 
     this->futureWatcher.setFuture(future);

@@ -32,6 +32,8 @@
 #include <QNetworkReply>
 #include <QProgressDialog>
 
+#include <atomic>
+
 #ifndef _WIN32
 #include <cerrno>
 #include <sys/socket.h>
@@ -60,6 +62,10 @@ enum status_t {
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
+    // Set when the user cancels or disconnects; the connection thread
+    // must not start another login attempt then.
+    std::atomic<bool> cancelRequested{ false };
+
     explicit MainWindow(QWidget* parent = 0, bool useTray = false, const QString profileName = {});
     ~MainWindow();
 
