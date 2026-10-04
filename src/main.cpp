@@ -93,18 +93,22 @@ bool relaunch_as_root()
 /* Up to v1.5.x the settings were opened with the default QSettings
  * constructor. On macOS that keys them by the organization domain
  * (openconnect.github.io), not by the company name OcSettings uses, so
- * after an upgrade the profiles seem to be gone. Copy whatever the new
- * location does not have yet; the legacy settings are left untouched. */
+ * after an upgrade the profiles seem to be gone. Once, copy whatever the
+ * new location does not have yet; the legacy settings are left untouched.
+ * It must not run again: a profile deleted later would come back. */
 static void migrate_legacy_macos_settings()
 {
+    static const QString doneKey = QStringLiteral("Settings/legacyMacSettingsImported");
+
+    OcSettings settings;
+    if (settings.value(doneKey, false).toBool()) {
+        return;
+    }
+    settings.setValue(doneKey, true);
+
     QSettings legacy("openconnect.github.io", "OpenConnect-GUI");
     legacy.setFallbacksEnabled(false); // skip NSGlobalDomain and friends
     const QStringList keys = legacy.allKeys();
-    if (keys.isEmpty()) {
-        return;
-    }
-
-    OcSettings settings;
     int copied = 0;
     for (const auto& key : keys) {
         if (!settings.contains(key)) {
@@ -112,8 +116,8 @@ static void migrate_legacy_macos_settings()
             ++copied;
         }
     }
+    settings.sync();
     if (copied) {
-        settings.sync();
         Logger::instance().addMessage(QObject::tr("Imported %1 settings from the previous version").arg(copied));
     }
 }
