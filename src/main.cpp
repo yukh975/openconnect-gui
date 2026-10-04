@@ -89,6 +89,36 @@ bool relaunch_as_root()
 }
 #endif
 
+#if defined(Q_OS_MACOS)
+/* Up to v1.5.x the settings were opened with the default QSettings
+ * constructor. On macOS that keys them by the organization domain
+ * (openconnect.github.io), not by the company name OcSettings uses, so
+ * after an upgrade the profiles seem to be gone. Copy whatever the new
+ * location does not have yet; the legacy settings are left untouched. */
+static void migrate_legacy_macos_settings()
+{
+    QSettings legacy("openconnect.github.io", "OpenConnect-GUI");
+    legacy.setFallbacksEnabled(false); // skip NSGlobalDomain and friends
+    const QStringList keys = legacy.allKeys();
+    if (keys.isEmpty()) {
+        return;
+    }
+
+    OcSettings settings;
+    int copied = 0;
+    for (const auto& key : keys) {
+        if (!settings.contains(key)) {
+            settings.setValue(key, legacy.value(key));
+            ++copied;
+        }
+    }
+    if (copied) {
+        settings.sync();
+        Logger::instance().addMessage(QObject::tr("Imported %1 settings from the previous version").arg(copied));
+    }
+}
+#endif
+
 int pin_callback(void* userdata, int attempt, const char* token_url,
     const char* token_label, unsigned flags, char* pin,
     size_t pin_max)
@@ -169,6 +199,10 @@ int main(int argc, char* argv[])
 
     auto fileLog = std::make_unique<FileLogger>();
     Logger::instance().addMessage(QString("%1 (%2) logging started...").arg(app.applicationDisplayName()).arg(app.applicationVersion()));
+
+#if defined(Q_OS_MACOS)
+    migrate_legacy_macos_settings();
+#endif
 
     gnutls_global_init();
 #ifndef _WIN32
