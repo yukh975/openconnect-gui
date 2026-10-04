@@ -419,9 +419,12 @@ static void setup_tun_vfn(void* privdata)
     }
 #endif
 
+    // An empty QByteArray still yields "" from constData(); pass NULL instead
+    // so that libopenconnect picks the interface itself. On macOS it rejects
+    // "" as an invalid name ("must match 'utun%d' or 'tun%d'").
     int ret = openconnect_setup_tun_device(vpn->vpninfo,
                                            vpncScriptFullPath.constData(),
-                                           interface_name.constData());
+                                           interface_name.isEmpty() ? nullptr : interface_name.constData());
     if (ret != 0) {
         vpn->last_err = QObject::tr("Error setting up the TUN device");
         //FIXME: ???        return ret;
