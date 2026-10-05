@@ -7,6 +7,7 @@ History of user-visible changes.
 - Update spdlog (1.15.3)
 - Windows Installer filename includes OpenConnect version
 - Fix Log / Main Window position /size issue (#246)
+- Keep the VPN protocol of profiles saved by v1.5.x
 
 [Full Changelog](https://gitlab.com/openconnect/openconnect-gui/-/compare/v1.6.2...main)
 

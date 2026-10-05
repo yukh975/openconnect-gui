@@ -240,6 +240,15 @@ int StoredServer::load(QString& name)
     this->m_token_type = settings.value("token-type").toInt();
 
     m_protocol_name = settings.value("protocol-name").toString();
+    if (m_protocol_name.isEmpty()) {
+        /* Up to v1.5.x only "protocol-id" was stored: an index into the two
+         * protocols that version knew, AnyConnect (0) and Juniper (1). Without
+         * this such a profile has no protocol at all, and connecting fails
+         * with "Unknown VPN protocol ''". */
+        m_protocol_name = settings.value("protocol-id", 0).toInt() == 1
+            ? QStringLiteral("nc")
+            : QStringLiteral("anyconnect");
+    }
 
     m_interface_name = settings.value("interface-name").toString();
 #ifdef _WIN32
